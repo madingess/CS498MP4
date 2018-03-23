@@ -46,6 +46,7 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.security.AlgorithmParameterGenerator;
 import java.security.GeneralSecurityException;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.Key;
 import java.security.KeyFactory;
 import java.security.KeyPair;
@@ -160,21 +161,15 @@ public class Connection {
             paramGen.init(keySize);
 
             KeyPairGenerator dh = KeyPairGenerator.getInstance("DH");
-            dh.initialize(paramGen.generateParameters().getParameterSpec(DHParameterSpec.class));
-            keyPair = dh.generateKeyPair();
-
-            // send a half and get a half
-            writeKey(keyPair.getPublic());
+            DHParameterSpec parameterSpec = paramGen.generateParameters().getParameterSpec(DHParameterSpec.class);
+			keyPair = generateKeyPairWithSpec(dh, parameterSpec);
             otherHalf = KeyFactory.getInstance("DH").generatePublic(readKey());
         } else {
             otherHalf = KeyFactory.getInstance("DH").generatePublic(readKey());
 
             KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance("DH");
-            keyPairGen.initialize(((DHPublicKey) otherHalf).getParams());
-            keyPair = keyPairGen.generateKeyPair();
-
-            // send a half and get a half
-            writeKey(keyPair.getPublic());
+            DHParameterSpec params = ((DHPublicKey) otherHalf).getParams();
+			keyPair = generateKeyPairWithSpec(keyPairGen, params);
         }
 
         KeyAgreement ka = KeyAgreement.getInstance("DH");
@@ -183,6 +178,17 @@ public class Connection {
 
         return ka;
     }
+
+	private KeyPair generateKeyPairWithSpec(KeyPairGenerator dh, DHParameterSpec parameterSpec)
+			throws InvalidAlgorithmParameterException, IOException {
+		KeyPair keyPair;
+		dh.initialize(parameterSpec);
+		keyPair = dh.generateKeyPair();
+
+		// send a half and get a half
+		writeKey(keyPair.getPublic());
+		return keyPair;
+	}
 
     /**
      * Upgrades a connection with transport encryption by the specified symmetric cipher.

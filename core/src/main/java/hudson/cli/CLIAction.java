@@ -213,8 +213,7 @@ public class CLIAction implements UnprotectedRootAction, StaplerProxy {
                             connection.sendExit(2);
                             return;
                         }
-                        command.setTransportAuth(Jenkins.getAuthentication());
-                        command.setClientCharset(connection.encoding);
+                        setTransportandClient(connection, command);
                         CLICommand orig = CLICommand.setCurrent(command);
                         try {
                             runningThread.set(Thread.currentThread());
@@ -232,6 +231,11 @@ public class CLIAction implements UnprotectedRootAction, StaplerProxy {
                         }
                     }
                 }
+
+				private void setTransportandClient(ServerSideImpl connection, CLICommand command) {
+					command.setTransportAuth(Jenkins.getAuthentication());
+					command.setClientCharset(connection.encoding);
+				}
             };
         }
     }
